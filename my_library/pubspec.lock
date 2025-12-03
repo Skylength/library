@@ -81,14 +81,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  flip_curl_animation_widget:
-    dependency: "direct main"
-    description:
-      name: flip_curl_animation_widget
-      sha256: "370e148add894e35d250e81d93693bdb893a3be58559db44b14c9d2414579c8c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -192,6 +184,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.17.0"
+  page_flip:
+    dependency: "direct main"
+    description:
+      name: page_flip
+      sha256: e5bdcaa7d0fdff09ecdd8bd8fd4718ba3ec1b0d237de57a07b9c0f4d522cb387
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.5+1"
   path:
     dependency: transitive
     description:

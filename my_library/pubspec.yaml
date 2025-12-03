@@ -36,9 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_pdf_flipbook: ^1.0.0
   pdfx: ^2.9.2
-  flip_curl_animation_widget: ^0.1.0
-  # page_flip: ^0.1.0
-  # page_turn: ^1.0.1
+  page_flip: ^0.2.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
