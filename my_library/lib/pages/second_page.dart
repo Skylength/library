@@ -94,14 +94,16 @@ class _SecondPageState extends State<SecondPage> {
           ),
         ),
 
-        // 2. 书架主体区域 (DragTarget)
+        // 2. 书架主体区域 (DragTarget) - 用于拖放到书架末尾
         DragTarget<DragData>(
-          onWillAcceptWithDetails: (details) => true,
+          onWillAcceptWithDetails: (details) {
+            // 只接受从其他书架拖来的书
+            return details.data.fromShelfIndex != shelfIndex;
+          },
           onAcceptWithDetails: (details) {
             final data = details.data;
-            if (data.fromShelfIndex == shelfIndex) return; // 同书架暂不处理排序
             setState(() {
-              _shelves[data.fromShelfIndex].books.remove(data.book);
+              _shelves[data.fromShelfIndex].books.removeAt(data.fromBookIndex);
               _shelves[shelfIndex].books.add(data.book);
             });
           },
@@ -157,7 +159,7 @@ class _SecondPageState extends State<SecondPage> {
                       itemCount: shelf.books.length,
                       itemBuilder: (context, bookIndex) {
                         final book = shelf.books[bookIndex];
-                        return _buildDraggableBook(book, shelfIndex);
+                        return _buildDraggableBook(book, shelfIndex, bookIndex);
                       },
                     ),
                   ),
@@ -171,45 +173,89 @@ class _SecondPageState extends State<SecondPage> {
     );
   }
 
-  Widget _buildDraggableBook(BookModel book, int shelfIndex) {
+  Widget _buildDraggableBook(BookModel book, int shelfIndex, int bookIndex) {
     // 限制尺寸算法
     final double thickness = (24 + (book.pageCount / 30)).clamp(24.0, 55.0);
     final double height = (95 + (book.pageCount / 40)).clamp(95.0, 130.0);
 
-    return LongPressDraggable<DragData>(
-      data: DragData(book: book, fromShelfIndex: shelfIndex),
-      delay: const Duration(milliseconds: 200), // 添加延迟，区分点击和拖拽
-      hapticFeedbackOnStart: true, // 开始拖拽时震动反馈
-      feedback: Material(
-        color: Colors.transparent,
-        child: _BookVisual(
-          book: book,
-          width: thickness,
-          height: height,
-          isDragging: true,
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.2,
-        child: _BookVisual(
-          book: book,
-          width: thickness,
-          height: height,
-          isPlaceholder: true,
-        ),
-      ),
-      // 这里的 child 是正常状态下的书
-      child: _InteractiveBook(
-        book: book,
-        width: thickness,
-        height: height,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => BookDetailPage(book: book)),
-          );
-        },
-      ),
+    return DragTarget<DragData>(
+      onWillAcceptWithDetails: (details) {
+        // 不接受拖到自己身上
+        final data = details.data;
+        return !(data.fromShelfIndex == shelfIndex && data.fromBookIndex == bookIndex);
+      },
+      onAcceptWithDetails: (details) {
+        final data = details.data;
+        setState(() {
+          // 先从原位置移除
+          _shelves[data.fromShelfIndex].books.removeAt(data.fromBookIndex);
+
+          // 计算插入位置
+          int insertIndex = bookIndex;
+          // 如果是同书架且原位置在目标位置之前，目标索引需要-1
+          if (data.fromShelfIndex == shelfIndex && data.fromBookIndex < bookIndex) {
+            insertIndex--;
+          }
+
+          // 插入到目标位置
+          _shelves[shelfIndex].books.insert(insertIndex, data.book);
+        });
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 悬停时显示插入指示器
+            if (isHovering)
+              Container(
+                width: 3,
+                height: height,
+                margin: const EdgeInsets.only(right: 2),
+                decoration: BoxDecoration(
+                  color: ClaudeColors.accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            LongPressDraggable<DragData>(
+              data: DragData(book: book, fromShelfIndex: shelfIndex, fromBookIndex: bookIndex),
+              delay: const Duration(milliseconds: 200), // 平衡点击和拖拽响应
+              hapticFeedbackOnStart: true, // 开始拖拽时震动反馈
+              feedback: Material(
+                color: Colors.transparent,
+                child: _BookVisual(
+                  book: book,
+                  width: thickness,
+                  height: height,
+                  isDragging: true,
+                ),
+              ),
+              childWhenDragging: Opacity(
+                opacity: 0.2,
+                child: _BookVisual(
+                  book: book,
+                  width: thickness,
+                  height: height,
+                  isPlaceholder: true,
+                ),
+              ),
+              // 这里的 child 是正常状态下的书
+              child: _InteractiveBook(
+                book: book,
+                width: thickness,
+                height: height,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BookDetailPage(book: book)),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -365,5 +411,6 @@ class ShelfData {
 class DragData {
   final BookModel book;
   final int fromShelfIndex;
-  DragData({required this.book, required this.fromShelfIndex});
+  final int fromBookIndex;
+  DragData({required this.book, required this.fromShelfIndex, required this.fromBookIndex});
 }
